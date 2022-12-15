@@ -10,21 +10,12 @@ const universe = Universe.new();
 const width = universe.width();
 const height = universe.height();
 
-/** @type HTMLCanvasElement */
+/** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("game-of-life-canvas");
 canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const ctx = canvas.getContext("2d");
-
-const renderLoop = () => {
-  universe.tick();
-
-  drawGrid();
-  drawCells();
-
-  requestAnimationFrame(renderLoop);
-};
 
 const drawGrid = () => {
   ctx.beginPath();
@@ -80,4 +71,43 @@ const drawCells = () => {
 
 drawGrid();
 drawCells();
-requestAnimationFrame(renderLoop);
+
+// To cancel the animation, we need to keep track of the animation frame request ID.
+// Because JavaScript is driving the Rust code, pausing JavaScript is all we need to do.
+/** @type {number | null} */
+let animationId = null;
+
+const renderLoop = () => {
+  universe.tick();
+
+  drawGrid();
+  drawCells();
+
+  animationId = requestAnimationFrame(renderLoop);
+};
+
+const isPaused = () => animationId === null;
+
+/** @type {HTMLButtonElement} */
+const playPauseButton = document.getElementById("play-pause");
+
+const play = () => {
+  playPauseButton.textContent = "⏸️";
+  animationId = requestAnimationFrame(renderLoop);
+};
+
+const pause = () => {
+  playPauseButton.textContent = "▶️";
+  cancelAnimationFrame(animationId);
+  animationId = null;
+};
+
+playPauseButton.addEventListener("click", () => {
+  if (isPaused()) {
+    play();
+  } else {
+    pause();
+  }
+});
+
+play();
